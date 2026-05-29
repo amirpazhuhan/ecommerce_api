@@ -3,7 +3,9 @@ from django.shortcuts import render
 from rest_framework.views import APIView,Response
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-from .models import Cart, Order, OrderItem
+from .models import Order, OrderItem
+from cart.models import Cart
+
 # Create your views here.
 
 class CreateOrder(APIView):

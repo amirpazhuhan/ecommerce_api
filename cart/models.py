@@ -1,11 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import User
-from .models import Product
+
+from django.conf import settings
+from products.models import Product
 # Create your models here.
 
 class Cart(models.Model):
 
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     updated_at = models.DateTimeField(auto_now=True)
 
     @ property
