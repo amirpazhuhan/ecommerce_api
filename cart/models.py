@@ -9,7 +9,7 @@ class Cart(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     updated_at = models.DateTimeField(auto_now=True)
 
-    @ property
+    @property
     def get_total_price(self):
         total_price = 0
         for each in self.items.all():

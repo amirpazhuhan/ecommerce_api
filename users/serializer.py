@@ -3,9 +3,13 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-class UserSerializer(serializers.ModelSerializer):
+class RegisterSerializer(serializers.ModelSerializer):
 
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, 
+                                     min_length=8,
+                                     style= {'input_type': 'password'},
+                                     trim_whitespace = False,
+                                     )
 
     class Meta:
         model = User
