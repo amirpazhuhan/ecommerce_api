@@ -18,6 +18,8 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='orderitems')
+    # Preserve what was bought even if the product changes later.
+    product_name = models.CharField(max_length=200)
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveBigIntegerField()

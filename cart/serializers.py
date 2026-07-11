@@ -1,11 +1,14 @@
 from rest_framework import serializers
-
-from .models import Cart, Item, Product
+from products.models import Product
+from products.serializers import ProductSerializer
+from .models import Cart, Item
 
 class ItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    
     class Meta:
         model = Item
-        fields= ['id', 'item', 'quantity']
+        fields = ['id', 'product', 'quantity']
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -13,7 +16,7 @@ class CartSerializer(serializers.ModelSerializer):
     items = ItemSerializer(many=True, read_only=True)
 
     def get_total_price(self,obj):
-        return obj.get_total_price()
+        return obj.get_total_price
     
     class Meta:
         model = Cart
@@ -26,7 +29,14 @@ class AddToCartSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=1)
 
     def validate_product_id(self, value):
-        # This is custom validation!
+
         if not Product.objects.filter(pk=value).exists():
             raise serializers.ValidationError("This product does not exist.")
         return value
+    
+
+class DeleteItemSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+   
+    
+    
