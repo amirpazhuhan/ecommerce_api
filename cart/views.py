@@ -1,66 +1,164 @@
 from django.shortcuts import get_object_or_404
 
-from rest_framework.views import APIView
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiResponse,
+)
+
 from rest_framework import permissions
-from .serializers import AddToCartSerializer, CartSerializer, DeleteItemSerializer
 from rest_framework.response import Response
-from .models import Cart, Item
+from rest_framework.views import APIView
+
 from products.models import Product
-# Create your views here.
+from .models import Cart, Item
+from .serializers import (
+    AddToCartSerializer,
+    CartSerializer,
+    DeleteItemSerializer,
+)
+
 
 class AddItemCart(APIView):
+    """
+    Add a product to the authenticated user's shopping cart.
+
+    If the product already exists in the cart, its quantity is increased
+    instead of creating a duplicate cart item.
+
+    The requested quantity is validated against the product's current stock
+    before any database modifications are made.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=["Cart"],
+        summary="Add an item to the shopping cart",
+        description="""
+        Adds a product to the authenticated user's shopping cart.
+
+        Behaviour:
+        - Creates a cart automatically if one does not exist.
+        - Increases the quantity if the product is already present.
+        - Rejects requests that exceed the available stock.
+        - Returns the updated cart.
+        """,
+        request=AddToCartSerializer,
+        responses={
+            200: CartSerializer,
+            400: OpenApiResponse(description="Insufficient stock."),
+            401: OpenApiResponse(description="Authentication required."),
+        },
+    )
     def post(self, request):
-        
         serializer = AddToCartSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        cart, _ = Cart.objects.get_or_create(user=request.user)
-        product = get_object_or_404(Product, pk=serializer.validated_data['product_id'])
-        quantity = serializer.validated_data['quantity']
 
-        # Validate before writing so a rejected request never leaves a cart row.
-        item = Item.objects.filter(cart=cart, product=product).first()
+        # Ensure every authenticated user has exactly one cart.
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+
+        product = get_object_or_404(
+            Product,
+            pk=serializer.validated_data["product_id"],
+        )
+
+        quantity = serializer.validated_data["quantity"]
+
+        # Look for an existing cart item so repeated requests update
+        # quantity instead of creating duplicate rows.
+        item = Item.objects.filter(
+            cart=cart,
+            product=product,
+        ).first()
+
         if item:
             quantity += item.quantity
+
+        # Validate stock before writing anything to the database.
         if quantity > product.stock:
-            return Response({"detail": "Insufficient stock."}, status=400)
+            return Response(
+                {"detail": "Insufficient stock."},
+                status=400,
+            )
+
         if item:
             item.quantity = quantity
             item.save(update_fields=["quantity"])
         else:
-            Item.objects.create(cart=cart, product=product, quantity=quantity)
+            Item.objects.create(
+                cart=cart,
+                product=product,
+                quantity=quantity,
+            )
 
-        return Response(CartSerializer(cart).data, status=200)
-    
-
+        return Response(CartSerializer(cart).data)
 
 
 class DeleteItemCart(APIView):
     """
-    Deletes an Item from user's cart.
+    Remove a product from the authenticated user's shopping cart.
     """
+
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=["Cart"],
+        summary="Remove an item from the shopping cart",
+        description="""
+        Deletes a product from the authenticated user's shopping cart.
+
+        Returns HTTP 204 when the item has been successfully removed.
+        """,
+        request=DeleteItemSerializer,
+        responses={
+            204: OpenApiResponse(description="Item deleted."),
+            401: OpenApiResponse(description="Authentication required."),
+            404: OpenApiResponse(description="Item not found."),
+        },
+    )
     def delete(self, request):
         serializer = DeleteItemSerializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
-            
-        user = request.user
-        product_id = serializer.validated_data["product_id"]
-        cart = get_object_or_404(Cart, user=user)
-        cart_item = get_object_or_404(cart.items, product_id=product_id)
+
+        cart = get_object_or_404(
+            Cart,
+            user=request.user,
+        )
+
+        cart_item = get_object_or_404(
+            cart.items,
+            product_id=serializer.validated_data["product_id"],
+        )
+
         cart_item.delete()
+
         return Response(status=204)
-    
+
 
 class ViewCart(APIView):
+    """
+    Retrieve the authenticated user's shopping cart.
+
+    If the user has not created a cart yet, an empty cart is created
+    automatically and returned.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
+    @extend_schema(
+        tags=["Cart"],
+        summary="Retrieve the current shopping cart",
+        description="""
+        Returns the authenticated user's shopping cart, including
+        all cart items and calculated totals.
 
+        An empty cart is created automatically for first-time users.
+        """,
+        responses={
+            200: CartSerializer,
+            401: OpenApiResponse(description="Authentication required."),
+        },
+    )
+    def get(self, request):
         cart, _ = Cart.objects.get_or_create(user=request.user)
-        return Response(CartSerializer(cart).data, status=200)
+        return Response(CartSerializer(cart).data)

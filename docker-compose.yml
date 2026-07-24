@@ -1,0 +1,31 @@
+services:
+    web:
+        build: .
+        ports:
+        - "8001:8001"
+        command: python manage.py runserver 0.0.0.0:8001
+        # command: gunicorn django_project.wsgi -b 0.0.0.0:8001
+        volumes:
+        - .:/code
+        depends_on: 
+        - db
+        environment:
+        - "Django_SECRET_KEY=django-insecure-7-3=o(e4ok49mog#75a1pv#(5_#3r!$$s6j03fh9rbk_$$m7ev-5"
+        - "DJANGO_DUBUG=True"
+        - "DJANGO_SECURE_SSL_REDIRECT=False"
+        - "DJANGO_SECURE_HSTS_SECONDS=0"
+        - "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=False" 
+        - "DJANGO_SECURE_HSTS_PRELOAD=False" 
+        - "DJANGO_SESSION_COOKIE_SECURE=False"
+        - "DJANGO_CSRF_COOKIE_SECURE=False"
+
+    db:
+      image: postgres:15
+      volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+
+    
+volumes:
+  postgres_data:
