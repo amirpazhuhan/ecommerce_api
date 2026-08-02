@@ -4,7 +4,13 @@ from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import (
+    ListAPIView,
+    CreateAPIView,
+    UpdateAPIView,
+    DestroyAPIView,
+)
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -12,6 +18,7 @@ from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiResponse,
     extend_schema,
+    extend_schema_view,
 )
 
 from .models import Category, Product
@@ -19,6 +26,7 @@ from .serializers import (
     CategorySerializer,
     ProductDetailSerializer,
     ProductSerializer,
+    CreateProductSerializer,
 )
 
 
@@ -133,6 +141,85 @@ class ProductDetailView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    summary="Create a product",
+    description=(
+        "Creates a new product. "
+        "Only admin (staff) users are allowed to access this endpoint."
+    ),
+    request=CreateProductSerializer,
+    responses={
+        201: CreateProductSerializer,
+        400: None,
+        401: None,
+        403: None,
+    },
+    tags=["Products"],
+)
+class CreateProductView(CreateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = CreateProductSerializer
+    permission_classes = [IsAdminUser]
+
+
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiResponse,
+)
+from rest_framework.generics import UpdateAPIView, DestroyAPIView
+from rest_framework.permissions import IsAdminUser
+
+
+@extend_schema_view(
+    put=extend_schema(
+        tags=["Products"],
+        summary="Update a product",
+        description="Update all fields of an existing product. Only administrators can perform this action.",
+        responses={
+            200: CreateProductSerializer,
+            400: OpenApiResponse(description="Invalid data."),
+            401: OpenApiResponse(description="Authentication required."),
+            403: OpenApiResponse(description="Admin privileges required."),
+            404: OpenApiResponse(description="Product not found."),
+        },
+    ),
+    patch=extend_schema(
+        tags=["Products"],
+        summary="Partially update a product",
+        description="Update one or more fields of an existing product. Only administrators can perform this action.",
+        responses={
+            200: CreateProductSerializer,
+            400: OpenApiResponse(description="Invalid data."),
+            401: OpenApiResponse(description="Authentication required."),
+            403: OpenApiResponse(description="Admin privileges required."),
+            404: OpenApiResponse(description="Product not found."),
+        },
+    ),
+)
+class ProductUpdateView(UpdateAPIView):
+    queryset = Product.objects.all()
+    serializer_class = CreateProductSerializer
+    permission_classes = [IsAdminUser]
+
+
+@extend_schema(
+    tags=["Products"],
+    summary="Delete a product",
+    description="Delete an existing product. Only administrators can perform this action.",
+    responses={
+        204: OpenApiResponse(description="Product deleted successfully."),
+        401: OpenApiResponse(description="Authentication required."),
+        403: OpenApiResponse(description="Admin privileges required."),
+        404: OpenApiResponse(description="Product not found."),
+    },
+)
+class ProductDeleteView(DestroyAPIView):
+    queryset = Product.objects.all()
+    serializer_class = CreateProductSerializer
+    permission_classes = [IsAdminUser]
+
+
 class CategoryListView(APIView):
     """
     List all product categories.
@@ -152,6 +239,14 @@ class CategoryListView(APIView):
         return Response(serializer.data)
 
 
+@extend_schema(
+    tags=["Categories"],
+    summary="List products in a category",
+    description="Retrieve all products that belong to the specified category.",
+    responses={
+        200: ProductSerializer(many=True),
+    },
+)
 class CategoryProductsView(ListAPIView):
     """
     List all products belonging to a specific category.
@@ -159,16 +254,6 @@ class CategoryProductsView(ListAPIView):
 
     serializer_class = ProductSerializer
 
-    @extend_schema(
-        tags=["Categories"],
-        summary="List products in a category",
-        description="""
-        Retrieve all products that belong to the specified category.
-        """,
-        responses={
-            200: ProductSerializer(many=True),
-        },
-    )
     def get_queryset(self):
         # Filter products by the category identifier supplied in the URL.
         return Product.objects.filter(

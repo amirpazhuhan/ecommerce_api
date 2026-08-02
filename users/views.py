@@ -1,12 +1,13 @@
 from django.contrib.auth import get_user_model
 
 from drf_spectacular.utils import (
+    OpenApiExample,
     OpenApiResponse,
     extend_schema,
 )
 
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -17,8 +18,8 @@ from .serializer import (
     CustomTokenObtainPairSerializer,
     RegisterSerializer,
     UserSerializer,
+    ChangePasswordSerializer,
 )
-
 
 User = get_user_model()
 
@@ -35,9 +36,7 @@ User = get_user_model()
     request=RegisterSerializer,
     responses={
         201: UserSerializer,
-        400: OpenApiResponse(
-            description="Validation failed."
-        ),
+        400: OpenApiResponse(description="Validation failed."),
     },
 )
 class RegisterView(generics.CreateAPIView):
@@ -95,9 +94,7 @@ class CustomTokenRefreshView(TokenRefreshView):
     """,
     responses={
         200: UserSerializer,
-        401: OpenApiResponse(
-            description="Authentication required."
-        ),
+        401: OpenApiResponse(description="Authentication required."),
     },
 )
 class MeView(generics.RetrieveUpdateAPIView):
@@ -113,5 +110,63 @@ class MeView(generics.RetrieveUpdateAPIView):
 
         This prevents users from accessing or modifying
         another user's profile.
+        """
+        return self.request.user
+
+
+@extend_schema(
+    tags=["Users"],
+    summary="Change the authenticated user's password",
+    description=(
+        "Update the password of the currently authenticated user. "
+        "The request must include the user's current password and "
+        "a new password that satisfies Django's password validation "
+        "requirements."
+    ),
+    request=ChangePasswordSerializer,
+    responses={
+        200: OpenApiResponse(description="Password changed successfully."),
+        400: OpenApiResponse(
+            description=(
+                "Validation failed because the current password "
+                "is incorrect or the new password does not meet "
+                "the password policy."
+            )
+        ),
+        401: OpenApiResponse(
+            description="Authentication credentials were not provided or are invalid."
+        ),
+    },
+    examples=[
+        OpenApiExample(
+            "Example request",
+            value={
+                "old_password": "OldPassword123!",
+                "new_password": "NewStrongPassword456!",
+            },
+            request_only=True,
+        ),
+    ],
+)
+class ChangePasswordView(generics.UpdateAPIView):
+    """
+    Allow an authenticated user to change their account password.
+
+    The endpoint always operates on the currently authenticated
+    user rather than accepting a user ID in the URL. This ensures
+    users can only change their own passwords.
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    def get_object(self):
+        """
+        Return the authenticated user.
+
+        ``UpdateAPIView`` requires an object to update. Returning
+        ``request.user`` ensures that the serializer updates the
+        currently authenticated user's password instead of looking
+        up a user from a queryset.
         """
         return self.request.user

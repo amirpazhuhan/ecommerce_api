@@ -22,6 +22,20 @@ class ProductSerializer(serializers.ModelSerializer):
         )
 
 
+class CreateProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = (
+            "id",
+            "name",
+            "description",
+            "slug",
+            "stock",
+            "price",
+            "category",
+        )
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     """
     Serialize detailed information for a single product.

@@ -3,18 +3,21 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiResponse,
+    OpenApiParameter,
 )
 
+from rest_framework import status
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import UpdateAPIView
 
 from products.models import Product
 from .models import Cart, Item
 from .serializers import (
     AddToCartSerializer,
     CartSerializer,
-    DeleteItemSerializer,
+    ItemSerializer,
 )
 
 
@@ -109,16 +112,13 @@ class DeleteItemCart(APIView):
 
         Returns HTTP 204 when the item has been successfully removed.
         """,
-        request=DeleteItemSerializer,
         responses={
             204: OpenApiResponse(description="Item deleted."),
             401: OpenApiResponse(description="Authentication required."),
             404: OpenApiResponse(description="Item not found."),
         },
     )
-    def delete(self, request):
-        serializer = DeleteItemSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def delete(self, request, product_id):
 
         cart = get_object_or_404(
             Cart,
@@ -127,7 +127,7 @@ class DeleteItemCart(APIView):
 
         cart_item = get_object_or_404(
             cart.items,
-            product_id=serializer.validated_data["product_id"],
+            product_id=product_id,
         )
 
         cart_item.delete()
@@ -162,3 +162,42 @@ class ViewCart(APIView):
     def get(self, request):
         cart, _ = Cart.objects.get_or_create(user=request.user)
         return Response(CartSerializer(cart).data)
+
+
+@extend_schema(
+    tags=["Cart"],
+    summary="Decrease the quantity of an item in the shopping cart",
+    description="""
+    Decreases the quantity of a product in the authenticated user's shopping cart.
+
+    - If the item's quantity is greater than 1, it is decreased by one.
+    - If the quantity becomes 0, the item is removed from the cart.
+
+    Returns the updated shopping cart.
+    """,
+    responses={
+        200: CartSerializer,
+        404: OpenApiResponse(
+            description="Cart or product not found in the shopping cart."
+        ),
+    },
+)
+class DecreaseCartItem(APIView):
+    """
+    Decrease the quantity of a product in the authenticated user's cart.
+    Removes the item if its quantity becomes zero.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, product_id):
+        cart = get_object_or_404(Cart, user=request.user)
+        cart_item = get_object_or_404(cart.items, product_id=product_id)
+
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+            cart_item.save()
+        else:
+            cart_item.delete()
+
+        return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)

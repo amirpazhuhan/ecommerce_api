@@ -72,16 +72,6 @@ class AddToCartSerializer(serializers.Serializer):
         # Fail fast with a clear validation error instead of allowing
         # the view to continue with an invalid product ID.
         if not Product.objects.filter(pk=value).exists():
-            raise serializers.ValidationError(
-                "This product does not exist."
-            )
+            raise serializers.ValidationError("This product does not exist.")
 
         return value
-
-
-class DeleteItemSerializer(serializers.Serializer):
-    """
-    Validate input for removing an item from the shopping cart.
-    """
-
-    product_id = serializers.IntegerField()

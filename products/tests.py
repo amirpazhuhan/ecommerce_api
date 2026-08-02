@@ -21,6 +21,12 @@ class CatalogAPITests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["results"][0]["name"], self.product.name)
 
+    def test_user_can_see_product_detail(self):
+        response = self.client.get(f"/api/v1/products/{self.product.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["id"], self.product.id)
+
     def test_category_endpoint_returns_category_products(self):
         response = self.client.get(f"/api/v1/products/category/{self.category.id}/")
 
