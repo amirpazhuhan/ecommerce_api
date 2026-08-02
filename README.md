@@ -152,6 +152,17 @@ ACCESS_TOKEN_LIFETIME=5
 REFRESH_TOKEN_LIFETIME=1
 ```
 
+
+#### Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Then update the values in `.env` according to your local environment.
+
 ### 5. Apply database migrations
 
 ```bash
