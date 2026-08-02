@@ -23,7 +23,7 @@ This project is a mini e-commerce REST API built with Python, Django, and Django
 The project consists of four applications: Products, Users, Cart, and Orders, each responsible for a different part of the system. PostgreSQL is used as the database, and Docker is included to simplify development and deployment.
 
 
-![alt text](<Screenshot 1405-05-11 at 1.47.23 PM.png>)
+![alt text](<Screenshot.png>)
 
 
 ## Features
