@@ -248,3 +248,15 @@ After running the project, the API documentation is available at:
 
 - Swagger UI: `/api/schema/swagger-ui/`
 - ReDoc: `/api/schema/redoc/`
+
+
+
+Interactive API documentation is available online:
+
+- **Swagger UI:** https://ecommerce-api-1-y8yb.onrender.com/api/schema/swagger-ui/
+
+You can also run the project locally and access Swagger at:
+
+```
+http://127.0.0.1:8000/api/schema/swagger-ui/
+```
