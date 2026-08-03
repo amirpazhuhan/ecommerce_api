@@ -11,7 +11,7 @@ services:
         - db
         environment:
         - "Django_SECRET_KEY=django-insecure-7-3=o(e4ok49mog#75a1pv#(5_#3r!$$s6j03fh9rbk_$$m7ev-5"
-        - "DJANGO_DUBUG=True"
+        - "DJANGO_DEBUG=True"
         - "DJANGO_SECURE_SSL_REDIRECT=False"
         - "DJANGO_SECURE_HSTS_SECONDS=0"
         - "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=False" 
