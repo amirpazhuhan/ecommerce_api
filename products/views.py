@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 
-from django_filters import rest_framework as filters
+from rest_framework import django_filters as filters
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.filters import OrderingFilter, SearchFilter

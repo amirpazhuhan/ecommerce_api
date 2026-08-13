@@ -189,6 +189,7 @@ class DecreaseCartItem(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CartSerializer
 
     def post(self, request, product_id):
         cart = get_object_or_404(Cart, user=request.user)
