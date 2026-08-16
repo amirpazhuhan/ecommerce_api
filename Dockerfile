@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn mini_ecommerce.wsgi:application --bind 0.0.0.0:10000 --access-logfile - --error-logfile - --log-level debug"]
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py makemigrations && python manage.py migrate --noinput && gunicorn mini_ecommerce.wsgi:application --bind 0.0.0.0:10000"]
